@@ -60,6 +60,11 @@ function localVideoUrl(url) {
   return url;
 }
 
+function downloadUrl(url) {
+  const local = localVideoUrl(url);
+  return local ? `${local}?download=1` : "";
+}
+
 async function api(path, options = {}) {
   const headers = new Headers(options.headers || {});
   if (state.apiKey) headers.set("X-Api-Key", state.apiKey);
@@ -175,8 +180,8 @@ function showVideo(data) {
   }
   state.currentUrl = url;
   downloadLink.hidden = false;
-  downloadLink.href = url;
   const name = data.fileName || "video.mp4";
+  downloadLink.href = downloadUrl(url);
   downloadLink.setAttribute("download", name);
   const bits = ["Saved in the videos folder"];
   if (data.duration) bits.push(`${data.duration}s`);
@@ -238,7 +243,7 @@ function renderClip(video) {
   actions.className = "clip-actions";
   const download = document.createElement("a");
   download.className = "quiet download";
-  download.href = localVideoUrl(video.localUrl);
+  download.href = downloadUrl(video.localUrl);
   download.download = video.fileName || "video.mp4";
   download.textContent = "Download";
   const remove = document.createElement("button");

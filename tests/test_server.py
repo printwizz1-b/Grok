@@ -302,7 +302,18 @@ class VideoDeskTests(unittest.TestCase):
         self.assertEqual(library["videos"][0]["duration"], 4)
         with urllib.request.urlopen(f"http://127.0.0.1:{self.port}{done['localUrl']}", timeout=5) as video:
             self.assertEqual(video.headers.get("Content-Type"), "video/mp4")
+            self.assertIsNone(video.headers.get("Content-Disposition"))
             self.assertEqual(video.read(), self.mp4_bytes)
+        with urllib.request.urlopen(
+            f"http://127.0.0.1:{self.port}{done['localUrl']}?download=1", timeout=5
+        ) as video:
+            disposition = video.headers.get("Content-Disposition")
+            self.assertEqual(disposition, f'attachment; filename="{done["fileName"]}"')
+            self.assertEqual(video.read(), self.mp4_bytes)
+        with urllib.request.urlopen(
+            f"http://127.0.0.1:{self.port}{done['localUrl']}?download=0", timeout=5
+        ) as video:
+            self.assertIsNone(video.headers.get("Content-Disposition"))
 
         status, again = request(self.port, "GET", "/api/videos/req-local-001", api_key="test-key")
         self.assertEqual(again["fileName"], done["fileName"])

@@ -19,7 +19,7 @@ import webbrowser
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 mimetypes.add_type("image/svg+xml", ".svg")
 mimetypes.add_type("text/javascript", ".js")
@@ -582,6 +582,9 @@ class DeskHandler(BaseHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Cache-Control", "no-store")
         self.send_header("Accept-Ranges", "none")
+        if self._download_requested():
+            # The on-disk name is already limited to letters, numbers, and .mp4.
+            self.send_header("Content-Disposition", f'attachment; filename="{path.name}"')
         self.end_headers()
         with path.open("rb") as handle:
             while True:
@@ -589,6 +592,10 @@ class DeskHandler(BaseHTTPRequestHandler):
                 if not block:
                     break
                 self.wfile.write(block)
+
+    def _download_requested(self) -> bool:
+        values = parse_qs(urlparse(self.path).query).get("download", [])
+        return bool(values) and values[0] == "1"
 
     def _static(self, path: str) -> None:
         relative = "index.html" if path in {"", "/"} else path.lstrip("/")

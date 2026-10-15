@@ -33,7 +33,7 @@ Model and price details: https://docs.x.ai/developers/model-capabilities/video/g
 - Imagine Video 1.5 Lite or Imagine Video 1.5
 - 480p, 720p, or 1080p
 
-Generation usually takes a few minutes. The MP4 is saved under `videos/`. The page lists each clip by the prompt you wrote, and you can play, download, or delete it there.
+Generation usually takes a few minutes. The MP4 is saved under `videos/`. The page lists each clip by the prompt you wrote. Play stays on the page, and Download saves that MP4 to your computer.
 
 ## Checks
 
