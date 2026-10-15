@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Video Desk</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <p class="kicker">On this computer</p>
+      <h1>Video Desk</h1>
+    </div>
+    <p class="lede" id="api-line">Uses your xAI API key. Nothing is uploaded to a host.</p>
+  </header>
+
+  <section class="keybar" aria-labelledby="key-label">
+    <div class="key-field">
+      <label id="key-label" for="api-key">xAI API key</label>
+      <div class="key-row">
+        <input id="api-key" name="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="Paste the key from console.x.ai">
+        <button id="toggle-key" type="button" class="quiet">Show</button>
+      </div>
+    </div>
+    <label class="check">
+      <input id="remember-key" type="checkbox">
+      Keep the key in this browser
+    </label>
+    <a class="key-link" href="https://console.x.ai" target="_blank" rel="noreferrer">Create a key</a>
+    <p id="key-state" class="key-state">No key yet</p>
+  </section>
+
+  <main class="layout">
+    <form id="composer" class="panel">
+      <fieldset id="controls">
+        <div class="section-head">
+          <h2>Prompt</h2>
+          <span id="prompt-count">0 / 4000</span>
+        </div>
+        <textarea id="prompt" name="prompt" rows="6" maxlength="4000" placeholder="A paper boat crossing a rainy street at dusk, camera tracking low and slow"></textarea>
+        <div id="examples" class="examples"></div>
+        <p class="hint">Ctrl+Enter generates.</p>
+
+        <div class="section-head">
+          <h2>Starting image <span class="optional">optional</span></h2>
+        </div>
+        <div id="drop" class="drop">
+          <input id="image" class="file-input" name="image" type="file" accept="image/png,image/jpeg,image/webp" aria-label="Starting image">
+          <div id="drop-copy">
+            <strong>Drop a picture here</strong>
+            <span>PNG, JPEG, or WebP, under 6 MB. It becomes the first frame.</span>
+          </div>
+          <div id="image-preview" class="preview" hidden></div>
+        </div>
+        <button id="clear-image" type="button" class="quiet slim" hidden>Remove image</button>
+
+        <h2>Settings</h2>
+        <p class="field-label" id="model-label">Model</p>
+        <div class="choices" role="radiogroup" aria-labelledby="model-label">
+          <label class="choice">
+            <input type="radio" name="model" value="grok-imagine-video-1.5-lite" checked>
+            <span><strong>1.5 Lite</strong><small>Lower price for text or a starting image</small></span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="model" value="grok-imagine-video-1.5">
+            <span><strong>1.5</strong><small>Higher quality, native 1080p</small></span>
+          </label>
+        </div>
+
+        <label class="length" for="duration">
+          <span>Length <output id="duration-label" for="duration">6 seconds</output></span>
+          <input id="duration" name="duration" type="range" min="1" max="15" value="6" aria-valuemin="1" aria-valuemax="15" aria-valuenow="6">
+        </label>
+
+        <p class="field-label" id="aspect-label">Frame</p>
+        <div class="pills" role="radiogroup" aria-labelledby="aspect-label" id="aspects"></div>
+
+        <p class="field-label" id="resolution-label">Resolution</p>
+        <div class="pills" role="radiogroup" aria-labelledby="resolution-label">
+          <label class="pill"><input type="radio" name="resolution" value="480p"><span>480p</span></label>
+          <label class="pill"><input type="radio" name="resolution" value="720p" checked><span>720p</span></label>
+          <label class="pill"><input type="radio" name="resolution" value="1080p"><span>1080p</span></label>
+        </div>
+      </fieldset>
+
+      <p class="note">xAI bills the credits on this key for each second. Longer clips and 1080p cost more. <a href="https://console.x.ai" target="_blank" rel="noreferrer">console.x.ai</a></p>
+      <div class="actions">
+        <button id="generate" class="primary" type="submit">Generate 6-second video</button>
+        <button id="stop" type="button" class="quiet" hidden>Stop waiting</button>
+      </div>
+      <p id="form-error" class="error" role="alert"></p>
+    </form>
+
+    <section class="stage-wrap">
+      <div id="stage" class="stage" aria-busy="false">
+        <p id="stage-message">The clip plays here and is saved in the videos folder next to the app.</p>
+        <video id="player" controls hidden></video>
+      </div>
+      <div class="status-row">
+        <p id="live-status" class="meta" aria-live="polite"></p>
+        <div id="progress" class="progress" hidden>
+          <span id="progress-bar"></span>
+        </div>
+        <a id="download" class="quiet download" hidden download>Download MP4</a>
+      </div>
+      <section class="library" aria-labelledby="library-heading">
+        <div class="section-head">
+          <h2 id="library-heading">Saved on this computer</h2>
+          <p id="library-count" class="meta"></p>
+        </div>
+        <ul id="library-list"></ul>
+      </section>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
