@@ -40,6 +40,11 @@ class FakeHandler(BaseHTTPRequestHandler):
             }
         )
         mode = self.server.mode
+        if mode == "redirect-api":
+            self.send_response(302)
+            self.send_header("Location", "https://example.com/steal")
+            self.end_headers()
+            return
         if mode == "unauthorized":
             self._json(401, {"error": {"message": "bad key"}})
             return
@@ -49,6 +54,11 @@ class FakeHandler(BaseHTTPRequestHandler):
         self._json(200, {"request_id": "req-local-001"})
 
     def do_GET(self):
+        if self.path == "/bounce.mp4":
+            self.send_response(302)
+            self.send_header("Location", self.server.bounce_to)
+            self.end_headers()
+            return
         if self.path == "/sample.mp4":
             data = self.server.mp4
             self.send_response(200)
@@ -72,6 +82,21 @@ class FakeHandler(BaseHTTPRequestHandler):
             return
         if mode == "moderation":
             self._json(200, {"status": "done", "video": {"url": "", "respect_moderation": False, "duration": 1}})
+            return
+        if mode == "redirect-file":
+            host, port = self.server.server_address
+            self._json(
+                200,
+                {
+                    "status": "done",
+                    "progress": 100,
+                    "video": {
+                        "url": f"http://{host}:{port}/bounce.mp4",
+                        "duration": 4,
+                        "respect_moderation": True,
+                    },
+                },
+            )
             return
         if mode == "evil-url":
             self._json(
@@ -169,7 +194,13 @@ class VideoDeskTests(unittest.TestCase):
         self.videos = tempfile.TemporaryDirectory()
         self.fake = start_http(
             FakeHandler,
-            {"seen": [], "polls": {}, "mode": "ok", "mp4": self.mp4_bytes},
+            {
+                "seen": [],
+                "polls": {},
+                "mode": "ok",
+                "mp4": self.mp4_bytes,
+                "bounce_to": "https://example.com/clip.mp4",
+            },
         )
         host, port = self.fake.server_address
         self.config = server.DeskConfig(
@@ -267,6 +298,8 @@ class VideoDeskTests(unittest.TestCase):
 
         status, library = request(self.port, "GET", "/api/library")
         self.assertEqual(library["videos"][0]["fileName"], done["fileName"])
+        self.assertEqual(library["videos"][0]["prompt"], "A red paper boat on a rainy street")
+        self.assertEqual(library["videos"][0]["duration"], 4)
         with urllib.request.urlopen(f"http://127.0.0.1:{self.port}{done['localUrl']}", timeout=5) as video:
             self.assertEqual(video.headers.get("Content-Type"), "video/mp4")
             self.assertEqual(video.read(), self.mp4_bytes)
@@ -305,6 +338,61 @@ class VideoDeskTests(unittest.TestCase):
 
         status, body = request(self.port, "GET", "/library/../server.py")
         self.assertEqual(status, 404)
+
+    def test_delete_removes_the_saved_clip(self):
+        request(
+            self.port,
+            "POST",
+            "/api/generations",
+            {"prompt": "A boat to delete", "duration": 3},
+            api_key="test-key",
+        )
+        request(self.port, "GET", "/api/videos/req-local-001", api_key="test-key")
+        status, done = request(self.port, "GET", "/api/videos/req-local-001", api_key="test-key")
+        self.assertEqual(status, 200)
+        name = done["fileName"]
+        saved = Path(self.videos.name) / name
+        self.assertTrue(saved.with_suffix(".json").is_file())
+
+        status, body = request(self.port, "DELETE", f"/api/library/{name}")
+        self.assertEqual(status, 200)
+        self.assertTrue(body["ok"])
+        self.assertFalse(saved.exists())
+        self.assertFalse(saved.with_suffix(".json").exists())
+        status, library = request(self.port, "GET", "/api/library")
+        self.assertEqual(library["videos"], [])
+        status, missing = request(self.port, "DELETE", "/api/library/../server.py")
+        self.assertEqual(status, 404)
+        self.assertIn("not found", missing["error"].lower())
+
+    def test_redirects_are_not_followed_off_host(self):
+        self.fake.mode = "redirect-api"
+        status, body = request(
+            self.port,
+            "POST",
+            "/api/generations",
+            {"prompt": "A boat"},
+            api_key="test-key",
+        )
+        self.assertEqual(status, 502)
+        self.assertIn("redirect", body["error"].lower())
+        self.assertEqual(len(self.fake.seen), 1)
+
+        self.fake.mode = "ok"
+        request(self.port, "POST", "/api/generations", {"prompt": "A boat"}, api_key="test-key")
+        self.fake.mode = "redirect-file"
+        self.fake.bounce_to = "https://example.com/clip.mp4"
+        status, body = request(self.port, "GET", "/api/videos/req-local-001", api_key="test-key")
+        self.assertEqual(status, 200)
+        self.assertIn("redirected away", body["error"].lower())
+        self.assertEqual(list(Path(self.videos.name).glob("*.mp4")), [])
+
+        host, port = self.fake.server_address
+        self.fake.bounce_to = f"http://{host}:{port}/sample.mp4"
+        status, done = request(self.port, "GET", "/api/videos/req-local-001", api_key="test-key")
+        self.assertEqual(status, 200)
+        self.assertTrue(done["localUrl"].startswith("/library/"))
+        self.assertTrue((Path(self.videos.name) / done["fileName"]).is_file())
 
     def test_rejected_key_does_not_start_a_job(self):
         self.fake.mode = "unauthorized"
