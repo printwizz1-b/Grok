@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Video Desk</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <p class="kicker">On this computer</p>
+      <h1>Video Desk</h1>
+    </div>
+    <p class="lede" id="api-line">Uses your xAI API key. Nothing is uploaded to a host.</p>
+  </header>
+
+  <main class="layout">
+    <form id="composer" class="panel">
+      <label>
+        xAI API key
+        <input id="api-key" name="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="Paste the key from console.x.ai">
+      </label>
+      <label class="check">
+        <input id="remember-key" type="checkbox">
+        Keep the key in this browser
+      </label>
+
+      <label>
+        Prompt
+        <textarea id="prompt" name="prompt" rows="6" maxlength="4000" placeholder="A paper boat crossing a rainy street at dusk, camera tracking low and slow"></textarea>
+      </label>
+
+      <label>
+        Starting image <span class="optional">optional</span>
+        <input id="image" name="image" type="file" accept="image/png,image/jpeg,image/webp">
+      </label>
+      <div id="image-preview" class="preview" hidden></div>
+
+      <div class="grid">
+        <label>
+          Model
+          <select id="model" name="model">
+            <option value="grok-imagine-video-1.5-lite">Imagine Video 1.5 Lite</option>
+            <option value="grok-imagine-video-1.5">Imagine Video 1.5</option>
+          </select>
+        </label>
+        <label>
+          Length
+          <input id="duration" name="duration" type="range" min="1" max="15" value="6">
+          <span id="duration-label">6 seconds</span>
+        </label>
+        <label>
+          Frame
+          <select id="aspect" name="aspect">
+            <option>16:9</option>
+            <option>9:16</option>
+            <option>1:1</option>
+            <option>4:3</option>
+            <option>3:4</option>
+            <option>3:2</option>
+            <option>2:3</option>
+            <option>21:9</option>
+            <option>5:2</option>
+          </select>
+        </label>
+        <label>
+          Resolution
+          <select id="resolution" name="resolution">
+            <option>480p</option>
+            <option selected>720p</option>
+            <option>1080p</option>
+          </select>
+        </label>
+      </div>
+
+      <p class="note">xAI bills the credits on this key for each second of video. Lite is the lower-priced model. Create the key at <a href="https://console.x.ai" target="_blank" rel="noreferrer">console.x.ai</a>. This app does not sell a subscription.</p>
+      <div class="actions">
+        <button id="generate" type="submit">Generate video</button>
+        <button id="stop" type="button" class="quiet" hidden>Stop watching</button>
+      </div>
+      <p id="form-error" class="error" role="alert"></p>
+    </form>
+
+    <section class="stage-wrap">
+      <div id="stage" class="stage">
+        <p id="stage-message">The clip will play here and be saved in the videos folder next to the app.</p>
+        <video id="player" controls hidden></video>
+        <div id="progress" class="progress" hidden>
+          <span id="progress-bar"></span>
+        </div>
+      </div>
+      <p id="stage-meta" class="meta"></p>
+    </section>
+  </main>
+
+  <section class="library">
+    <h2>Saved on this computer</h2>
+    <ul id="library-list"></ul>
+  </section>
+
+  <script src="/app.js"></script>
+</body>
+</html>
